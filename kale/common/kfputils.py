@@ -194,13 +194,24 @@ def run_pipeline(
         pipeline_name,
         display_version,
     )
-
-    run = client.create_run_from_pipeline_package(
-        pipeline_file=pipeline_package_path,
-        arguments=kwargs,
-        run_name=run_name,
-        experiment_name=experiment_name,
-    )
+    try:
+        run = client.create_run_from_pipeline_package(
+            pipeline_file=pipeline_package_path,
+            arguments=kwargs,
+            run_name=run_name,
+            experiment_name=experiment_name,
+        )
+    except Exception as e:
+        if 'unknown field "securityContext"' in str(e):
+            log.error(
+                "KFP server does not support the 'securityContext' field. "
+                "This usually means the server version is older than 2.16.0."
+            )
+            raise RuntimeError(
+                "Your KFP server does not support the 'securityContext' field. "
+                "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
+            ) from e
+        raise
 
     print("Pipeline submitted!")
     log.info("Run ID: %s", run.run_id)
