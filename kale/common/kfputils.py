@@ -203,10 +203,6 @@ def run_pipeline(
         )
     except Exception as e:
         if 'unknown field "securityContext"' in str(e):
-            log.error(
-                "KFP server does not support the 'securityContext' field. "
-                "This usually means the server version is older than 2.16.0."
-            )
             raise RuntimeError(
                 "Your KFP server does not support the 'securityContext' field. "
                 "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
