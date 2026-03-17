@@ -203,7 +203,8 @@ def run_pipeline(
             experiment_name=experiment_name,
         )
     except ApiException as e:
-        if e.status == 400 and "securityContext" in str(e.body or ""):
+        body = (e.body or "").lower()
+        if e.status == 400 and "unknown field" in body and "securitycontext" in body:
             raise RuntimeError(
                 "Your KFP server does not support the 'securityContext' field. "
                 "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
