@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from kfp_server_api.exceptions import ApiException
 from functools import cache
 import hashlib
 import importlib.util
@@ -201,8 +202,8 @@ def run_pipeline(
             run_name=run_name,
             experiment_name=experiment_name,
         )
-    except Exception as e:
-        if 'unknown field "securityContext"' in str(e):
+    except ApiException as e:
+        if e.status == 400 and "securityContext" in str(e.body or ""):
             raise RuntimeError(
                 "Your KFP server does not support the 'securityContext' field. "
                 "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
