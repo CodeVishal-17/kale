@@ -203,12 +203,35 @@ def run_pipeline(
             experiment_name=experiment_name,
         )
     except ApiException as e:
-        body = (e.body or "").lower()
-        if e.status == 400 and "unknown field" in body and "securitycontext" in body:
-            raise RuntimeError(
-                "Your KFP server does not support the 'securityContext' field. "
-                "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
-            ) from e
+        try:
+            body = json.loads(e.body or "{}")
+
+            # Step 1: Check top-level error code
+            if body.get("code") == 13:
+                details = body.get("details") or []
+
+                for d in details:
+                    # Step 2: Check structured details
+                    if (
+                        d.get("@type") == "type.googleapis.com/google.rpc.Status"
+                        and d.get("code") == 2
+                    ):
+                        # Step 3: Check message safely
+                        message = body.get("message", "").lower()
+
+                        if (
+                            "failed to unmarshal kubernetes config" in message
+                            and 'unknown field "securitycontext"' in message
+                        ):
+                            raise RuntimeError(
+                                "Your KFP server does not support the 'securityContext' field. "
+                                "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
+                            ) from e
+
+        except (ValueError, TypeError):
+            # If JSON parsing fails, just fall back
+            pass
+
         raise
 
     print("Pipeline submitted!")
