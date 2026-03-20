@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp_server_api.exceptions import ApiException
-from functools import cache
 import hashlib
 import importlib.util
 import json
@@ -27,13 +25,13 @@ from typing import Any
 import kfp
 
 from kale.common import podutils, utils, workflowutils
+from kfp_server_api.exceptions import ApiException
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
 KFP_COMPONENT_SPEC_ANNOTATION_KEY = "pipelines.kubeflow.org/component_spec"
 KFP_SWF_NAME_ANNOTATION_KEY = "scheduledworkflows.kubeflow.org/scheduledWorkflowName"
 KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
-KFP_UI_METADATA_FILE_PATH = "/tmp/mlpipeline-ui-metadata.json"
 KFP_UI_METRICS_FILE_PATH = "/tmp/mlpipeline-metrics.json"
 
 _logger = None
@@ -195,6 +193,7 @@ def run_pipeline(
         pipeline_name,
         display_version,
     )
+
     try:
         run = client.create_run_from_pipeline_package(
             pipeline_file=pipeline_package_path,
@@ -206,17 +205,14 @@ def run_pipeline(
         try:
             body = json.loads(e.body or "{}")
 
-            # Step 1: Check top-level error code
             if body.get("code") == 13:
                 details = body.get("details") or []
 
                 for d in details:
-                    # Step 2: Check structured details
                     if (
                         d.get("@type") == "type.googleapis.com/google.rpc.Status"
                         and d.get("code") == 2
                     ):
-                        # Step 3: Check message safely
                         message = body.get("message", "").lower()
 
                         if (
@@ -229,7 +225,6 @@ def run_pipeline(
                             ) from e
 
         except (ValueError, TypeError):
-            # If JSON parsing fails, just fall back
             pass
 
         raise
@@ -240,72 +235,6 @@ def run_pipeline(
     log.info("Successfully submitted pipeline run.")
     log.info("Run URL: <host>%s", run_url)
     return run
-
-
-def get_current_uimetadata(uimetadata_path=KFP_UI_METADATA_FILE_PATH, default_if_not_exist=False):
-    """Parse the current UI metadata file and return its contents as dict.
-
-    Args:
-        uimetadata_path: The path to the mlpipeline-ui-metadata.json file
-        default_if_not_exist: set to True to return an empty uimetadata
-            file (i.e. `{"outputs": []}`) in case it does not exist
-    """
-    default_ui_metadata = {"outputs": []}
-    try:
-        outputs = utils.read_json_from_file(uimetadata_path)
-    except FileNotFoundError:
-        if default_if_not_exist:
-            return default_ui_metadata
-        raise
-    except json.JSONDecodeError:
-        log.error("Could not JSON parse the ui metadata file as it is malformed.")
-        raise
-
-    if not outputs.get("outputs"):
-        outputs["outputs"] = []
-    return outputs
-
-
-def update_uimetadata(artifact_name, uimetadata_path=KFP_UI_METADATA_FILE_PATH):
-    """Update ui-metadata dictionary with a new web-app entry.
-
-    Args:
-        artifact_name: Name of the artifact
-        uimetadata_path: path to mlpipeline-ui-metadata.json
-    """
-    log.info("Adding artifact '%s' to KFP UI metadata...", artifact_name)
-    try:
-        outputs = get_current_uimetadata(uimetadata_path, default_if_not_exist=True)
-    except json.JSONDecodeError:
-        log.error("This step will not be able to visualize artifacts in the KFP UI")
-        return
-
-    pod_name = podutils.get_pod_name()
-    namespace = podutils.get_namespace()
-    workflow_name = workflowutils.get_workflow_name(pod_name, namespace)
-    html_artifact_entry = [
-        {
-            "type": "web-app",
-            "storage": "minio",
-            "source": "minio://mlpipeline/artifacts/{}/{}/{}".format(
-                workflow_name, pod_name, artifact_name + ".tgz"
-            ),
-        }
-    ]
-    outputs["outputs"] += html_artifact_entry
-
-    try:
-        utils.ensure_or_create_dir(uimetadata_path)
-    except RuntimeError:
-        log.exception(
-            "Writing to '%s' failed. This step will not be able to"
-            " visualize artifacts in the KFP UI.",
-            uimetadata_path,
-        )
-        return
-    with open(uimetadata_path, "w") as f:
-        json.dump(outputs, f)
-    log.info("Artifact successfully added")
 
 
 def generate_mlpipeline_metrics(metrics):
@@ -415,49 +344,6 @@ def get_workflow_from_run(run):
 def format_kfp_run_id_uri(run_id: str):
     """Return a KFP run ID as a URI."""
     return f"kfp:run:{run_id}"
-
-
-@cache
-def is_kfp_step() -> bool:
-    """Detect if running inside a KFP step.
-
-    The detection involves two steps:
-
-      1. Auto-detect if the current Pod is part of an Argo workflow
-      2. Read one of the annotations that the KFP API Server sets in the
-         workflow object (one-off runs and recurring ones have different
-         annotations).
-    """
-    log.info("Checking if running inside a KFP step...")
-    try:
-        namespace = podutils.get_namespace()
-        workflow = workflowutils.get_workflow(
-            workflowutils.get_workflow_name(podutils.get_pod_name(), namespace), namespace
-        )
-        annotations = workflow["metadata"]["annotations"]
-        try:
-            _ = annotations[KFP_RUN_NAME_ANNOTATION_KEY]
-        except KeyError:
-            _ = annotations[KFP_SWF_NAME_ANNOTATION_KEY]
-    except Exception:
-        log.info("Not in a KFP step.")
-        return False
-    log.info("Running in a KFP step.")
-    return True
-
-
-def detect_run_uuid() -> str:
-    """Get the workflow's UUID form inside a pipeline step."""
-    namespace = podutils.get_namespace()
-    workflow = workflowutils.get_workflow(
-        workflowutils.get_workflow_name(podutils.get_pod_name(), namespace), namespace
-    )
-    run_uuid = workflow["metadata"].get("labels", {}).get(KFP_RUN_ID_LABEL_KEY, None)
-
-    # KFP api-server adds run UUID as label to workflows for KFP>=0.1.26.
-    # Return run UUID if available. Else return workflow UUID to maintain
-    # backwards compatibility.
-    return run_uuid or workflow["metadata"]["uid"]
 
 
 def compute_component_id(pod):
