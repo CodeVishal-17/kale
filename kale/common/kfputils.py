@@ -17,15 +17,16 @@ import importlib.util
 import json
 import logging
 import os
-from shutil import copyfile
+import re
 import tempfile
 import time
+from shutil import copyfile
 from typing import Any
 
 import kfp
+from kfp_server_api.exceptions import ApiException
 
 from kale.common import podutils, utils, workflowutils
-from kfp_server_api.exceptions import ApiException
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
@@ -59,13 +60,20 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     while pipeline_id is None and token is not None:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
-        f = next(filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines or []), None)
+        f = next(
+            filter(
+                lambda x: x.display_name == pipeline_name, pipelines.pipelines or []
+            ),
+            None,
+        )
         if f is not None:
             pipeline_id = f.pipeline_id
     return pipeline_id
 
 
-def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = None) -> str:
+def get_pipeline_version_id(
+    version_name: str, pipeline_id: str, host: str = None
+) -> str:
     """List through the versions and filter by version name.
 
     Args:
@@ -81,7 +89,9 @@ def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = Non
     version_id = None
     while version_id is None and page_token is not None:
         versions = client.pipelines.list_pipeline_versions(
-            resource_key_type="PIPELINE", resource_key_id=pipeline_id, page_token=page_token
+            resource_key_type="PIPELINE",
+            resource_key_id=pipeline_id,
+            page_token=page_token,
         )
         page_token = versions.next_page_token
         f = next(filter(lambda x: x.name == version_name, versions.versions), None)
@@ -145,7 +155,9 @@ def upload_pipeline(
             pipeline_id=pipeline_id,
         )
         version_id = upv.pipeline_version_id
-        log.info("Uploaded version '%s' for pipeline '%s'.", version_name, pipeline_name)
+        log.info(
+            "Uploaded version '%s' for pipeline '%s'.", version_name, pipeline_name
+        )
     return pipeline_id, version_id
 
 
@@ -181,12 +193,17 @@ def run_pipeline(
             pipeline_id=pipeline_id, pipeline_version_id=version_id
         ).display_name
     except Exception:
-        log.debug("Could not retrieve pipeline version with ID '%s'. Using 'unknown'.", version_id)
+        log.debug(
+            "Could not retrieve pipeline version with ID '%s'. Using 'unknown'.",
+            version_id,
+        )
         version_name = "unknown"
 
     if not run_name:
         run_name = f"{pipeline_name}-{version_name}-{utils.random_string()}"
-    display_version = "({}version: '{}')".format("" if version_id else "default ", version_name)
+    display_version = "({}version: '{}')".format(
+        "" if version_id else "default ", version_name
+    )
     log.info(
         "Submitting new pipeline run '%s' for pipeline '%s' %s ...",
         run_name,
@@ -217,7 +234,11 @@ def run_pipeline(
 
                         if (
                             "failed to unmarshal kubernetes config" in message
-                            and 'unknown field "securitycontext"' in message
+                            and re.search(
+                                r"unknown field.*securitycontext",
+                                message,
+                                re.IGNORECASE,
+                            )
                         ):
                             raise RuntimeError(
                                 "Your KFP server does not support the 'securityContext' field. "
@@ -248,7 +269,9 @@ def generate_mlpipeline_metrics(metrics):
         with open(KFP_UI_METRICS_FILE_PATH, "w", encoding="utf-8") as _kale_mf:
             json.dump(metrics, _kale_mf)
     except (OSError, TypeError, PermissionError) as e:
-        log.error("Not able to create metrics file, an unexpected error happened: %s", e)
+        log.error(
+            "Not able to create metrics file, an unexpected error happened: %s", e
+        )
 
 
 def load_mlpipeline_metrics(output):
@@ -352,8 +375,14 @@ def compute_component_id(pod):
     Kale steps are KFP SDK Components. This is the way MetadataWriter generates
     unique names for such components.
     """
-    log.info("Computing component ID for pod %s/%s...", pod.metadata.namespace, pod.metadata.name)
-    component_spec_text = pod.metadata.annotations.get(KFP_COMPONENT_SPEC_ANNOTATION_KEY)
+    log.info(
+        "Computing component ID for pod %s/%s...",
+        pod.metadata.namespace,
+        pod.metadata.name,
+    )
+    component_spec_text = pod.metadata.annotations.get(
+        KFP_COMPONENT_SPEC_ANNOTATION_KEY
+    )
     if not component_spec_text:
         raise ValueError("KFP component spec annotation not found in pod")
     component_spec = json.loads(component_spec_text)
