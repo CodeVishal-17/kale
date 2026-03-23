@@ -61,9 +61,7 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
         f = next(
-            filter(
-                lambda x: x.display_name == pipeline_name, pipelines.pipelines or []
-            ),
+            filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines or []),
             None,
         )
         if f is not None:
@@ -71,9 +69,7 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     return pipeline_id
 
 
-def get_pipeline_version_id(
-    version_name: str, pipeline_id: str, host: str = None
-) -> str:
+def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = None) -> str:
     """List through the versions and filter by version name.
 
     Args:
@@ -155,9 +151,7 @@ def upload_pipeline(
             pipeline_id=pipeline_id,
         )
         version_id = upv.pipeline_version_id
-        log.info(
-            "Uploaded version '%s' for pipeline '%s'.", version_name, pipeline_name
-        )
+        log.info("Uploaded version '%s' for pipeline '%s'.", version_name, pipeline_name)
     return pipeline_id, version_id
 
 
@@ -201,9 +195,7 @@ def run_pipeline(
 
     if not run_name:
         run_name = f"{pipeline_name}-{version_name}-{utils.random_string()}"
-    display_version = "({}version: '{}')".format(
-        "" if version_id else "default ", version_name
-    )
+    display_version = "({}version: '{}')".format("" if version_id else "default ", version_name)
     log.info(
         "Submitting new pipeline run '%s' for pipeline '%s' %s ...",
         run_name,
@@ -232,13 +224,10 @@ def run_pipeline(
                     ):
                         message = body.get("message", "").lower()
 
-                        if (
-                            "failed to unmarshal kubernetes config" in message
-                            and re.search(
-                                r"unknown field.*securitycontext",
-                                message,
-                                re.IGNORECASE,
-                            )
+                        if "failed to unmarshal kubernetes config" in message and re.search(
+                            r"unknown field.*securitycontext",
+                            message,
+                            re.IGNORECASE,
                         ):
                             raise RuntimeError(
                                 "Your KFP server does not support the 'securityContext' field. "
@@ -269,9 +258,7 @@ def generate_mlpipeline_metrics(metrics):
         with open(KFP_UI_METRICS_FILE_PATH, "w", encoding="utf-8") as _kale_mf:
             json.dump(metrics, _kale_mf)
     except (OSError, TypeError, PermissionError) as e:
-        log.error(
-            "Not able to create metrics file, an unexpected error happened: %s", e
-        )
+        log.error("Not able to create metrics file, an unexpected error happened: %s", e)
 
 
 def load_mlpipeline_metrics(output):
@@ -380,9 +367,7 @@ def compute_component_id(pod):
         pod.metadata.namespace,
         pod.metadata.name,
     )
-    component_spec_text = pod.metadata.annotations.get(
-        KFP_COMPONENT_SPEC_ANNOTATION_KEY
-    )
+    component_spec_text = pod.metadata.annotations.get(KFP_COMPONENT_SPEC_ANNOTATION_KEY)
     if not component_spec_text:
         raise ValueError("KFP component spec annotation not found in pod")
     component_spec = json.loads(component_spec_text)
