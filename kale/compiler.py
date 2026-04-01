@@ -24,7 +24,7 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader
 from kale import __version__ as KALE_VERSION
 from kale.common import graphutils, kfputils, utils
 from kale.common.imports import get_packages_to_install
-from kale.pipeline import DEFAULT_BASE_IMAGE, Pipeline, PipelineParam, Step
+from kale.pipeline import Pipeline, PipelineParam, Step
 
 log = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ class Compiler:
             step_inputs=step_inputs,
             step_outputs=step_outputs,
             kfp_dsl_artifact_imports=KFP_DSL_ARTIFACT_IMPORTS,
-            default_base_image=DEFAULT_BASE_IMAGE,
+            default_base_image=self.pipeline.config.base_image,
             **self.pipeline.config.to_dict(),
         )
         return autopep8.fix_code(fn_code)

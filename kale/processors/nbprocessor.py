@@ -376,7 +376,7 @@ class NotebookProcessor:
                         limits=tags.get("limits", {}),
                         labels=tags.get("labels", {}),
                         annotations=tags.get("annotations", {}),
-                        base_image=tags.get("base_image", ""),
+                        base_image=tags.get("base_image") or self.pipeline.config.base_image,
                         enable_caching=tags.get("enable_caching"),
                     )
                     self.pipeline.add_step(step)
