@@ -663,9 +663,17 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
           <DialogTitle>Base Image for Step</DialogTitle>
           <DialogContent>
             <p style={{ margin: '8px 0' }}>
-              Default:{' '}
+              System Default:{' '}
               <strong>
                 {this.props.defaultBaseImage || DEFAULT_BASE_IMAGE}
+              </strong>
+            </p>
+
+            <p style={{ margin: '8px 0' }}>
+              Pipeline Default:{' '}
+              <strong>
+                {this.props.pipelineBaseImage ||
+                  'Not set (uses system default)'}
               </strong>
             </p>
             <Input
@@ -673,11 +681,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               label="Custom Base Image"
               value={this.props.baseImage || ''}
               updateValue={(v: string) => this.updateBaseImage(v)}
-              placeholder={
-                this.props.pipelineBaseImage ||
-                this.props.defaultBaseImage ||
-                DEFAULT_BASE_IMAGE
-              }
+              placeholder="e.g. python:3.12"
               style={{ width: '100%', marginTop: '8px' }}
             />
           </DialogContent>
