@@ -17,8 +17,6 @@ import copy
 import logging
 import os
 
-from kubernetes.client.rest import ApiException
-from kubernetes.config import ConfigException
 import networkx as nx
 
 from kale.common import graphutils, podutils, utils
