@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
@@ -62,7 +62,13 @@ let kalePanelWidget: ReactWidget | undefined;
 export default {
   activate,
   id,
-  requires: [ILabShell, ILayoutRestorer, INotebookTracker, IDocumentManager],
+  requires: [
+    ILabShell,
+    ILayoutRestorer,
+    INotebookTracker,
+    IDocumentManager,
+    ISettingRegistry
+  ],
   provides: IKubeflowKale,
   autoStart: true,
 } as JupyterFrontEndPlugin<IKubeflowKale>;
@@ -73,6 +79,7 @@ async function activate(
   restorer: ILayoutRestorer,
   tracker: INotebookTracker,
   docManager: IDocumentManager,
+  settingRegistry: ISettingRegistry,
 ): Promise<IKubeflowKale> {
   const kernel: Kernel.IKernelConnection =
     await NotebookUtils.createNewKernel();
@@ -96,6 +103,31 @@ async function activate(
   // TODO: backend can become an Enum that indicates the type of
   //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
   const backend = await getBackend(kernel);
+  const settings = await settingRegistry.load('jupyterlab-kubeflow-kale:deploymentPanel');
+
+  let defaultBaseImage =
+    (settings.get('default_base_image').composite as string) ||
+    'python:3.12';
+
+  settings.changed.connect(() => {
+    defaultBaseImage =
+      (settings.get('default_base_image').composite as string) ||
+      'python:3.12';
+
+    if (kalePanelWidget) {
+      const newWidget = createPanel(defaultBaseImage);
+
+      newWidget.id = KALE_PANEL_ID;
+      newWidget.title.icon = kaleIcon;
+      newWidget.title.caption = 'Kubeflow Pipelines Deployment Panel';
+      newWidget.node.classList.add('kale-panel');
+
+      labShell.add(newWidget, 'left');
+
+      kalePanelWidget = newWidget;
+    }
+  });
+
   if (backend) {
     try {
       await executeRpc(kernel, 'log.setup_logging');
@@ -130,12 +162,8 @@ async function activate(
       kalePanelWidget.activate();
     }
   }
-
-  // Creates the left side bar widget once the app has fully started
-  lab.started.then(() => {
-    // show list of commands in the commandRegistry
-    // console.log(lab.commands.listCommands());
-    kalePanelWidget = ReactWidget.create(
+  function createPanel(defaultBaseImage: string) {
+    return ReactWidget.create(
       <KubeflowKaleLeftPanel
         ref={ref => setLeftPanelRef(ref)}
         lab={lab}
@@ -143,8 +171,15 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
-      />,
+        defaultBaseImage={defaultBaseImage}
+      />
     );
+  }
+  // Creates the left side bar widget once the app has fully started
+  lab.started.then(() => {
+    // show list of commands in the commandRegistry
+    // console.log(lab.commands.listCommands());
+    kalePanelWidget = createPanel(defaultBaseImage);
     kalePanelWidget.id = KALE_PANEL_ID;
     kalePanelWidget!.title.icon = kaleIcon;
     kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
