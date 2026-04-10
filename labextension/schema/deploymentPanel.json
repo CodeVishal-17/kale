@@ -1,0 +1,13 @@
+{
+  "title": "Kale Deployment Panel Settings",
+  "description": "Settings for default base image configuration",
+  "type": "object",
+  "properties": {
+    "defaultBaseImage": {
+      "type": "string",
+      "title": "Default Base Image",
+      "description": "Default Docker image used for pipeline steps",
+      "default": "python:3.12"
+    }
+  }
+}
