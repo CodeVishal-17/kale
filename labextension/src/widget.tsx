@@ -104,16 +104,16 @@ async function activate(
   // TODO: backend can become an Enum that indicates the type of
   //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
   const backend = await getBackend(kernel);
-  const settings = await settingRegistry.load('jupyterlab-kubeflow-kale:deploymentPanel');
+  const settings = await settingRegistry.load(
+    'jupyterlab-kubeflow-kale:deploymentPanel',
+  );
 
   let defaultBaseImage =
-    (settings.get('default_base_image').composite as string) ||
-    'python:3.12';
+    (settings.get('default_base_image').composite as string) || 'python:3.12';
 
   settings.changed.connect(() => {
     defaultBaseImage =
-      (settings.get('default_base_image').composite as string) ||
-      '';
+      (settings.get('default_base_image').composite as string) || '';
 
     if (kalePanelWidget) {
       const newWidget = createPanel(defaultBaseImage);
@@ -137,7 +137,6 @@ async function activate(
       throw error;
     }
   }
-
 
   async function loadPanel() {
     let reveal_widget = undefined;
@@ -176,7 +175,7 @@ async function activate(
         enableKaleByDefault={false}
         autoSaveOnCompileOrRun={false}
         defaultBaseImage={defaultBaseImage}
-      />
+      />,
     );
   }
   // Creates the left side bar widget once the app has fully started
