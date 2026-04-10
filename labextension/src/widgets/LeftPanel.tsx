@@ -61,6 +61,7 @@ interface IProps {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
+  defaultBaseImage?: string;
 }
 
 interface IState {
@@ -789,6 +790,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 {pipeline_desc_input}
                 {enable_caching_toggle}
               </div>
+              <Input
+                variant="standard"
+                label={'Default Base Image'}
+                value={this.state.defaultBaseImage}
+                placeholder="e.g. python:3.12"
+                updateValue={(v: string) => {
+                  this.setState({ defaultBaseImage: v });
+                  this.updateDockerImage(v);
+                }}
+              />
             </div>
 
             <div

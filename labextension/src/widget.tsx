@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
@@ -54,10 +53,6 @@ export interface IKubeflowKale {
 export const KALE_PANEL_ID = 'jupyterlab-kubeflow-kale/kubeflowDeployment';
 
 const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
-
-const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
-const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
-const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
@@ -118,7 +113,7 @@ async function activate(
   settings.changed.connect(() => {
     defaultBaseImage =
       (settings.get('default_base_image').composite as string) ||
-      'python:3.12';
+      '';
 
     if (kalePanelWidget) {
       const newWidget = createPanel(defaultBaseImage);
@@ -143,70 +138,6 @@ async function activate(
     }
   }
 
-  // Load and react to Kale JupyterLab settings
-  const SettingsAwareLeftPanel = () => {
-    const [kaleSettings, setKaleSettings] = React.useState({
-      enableKaleByDefault: false,
-      autoSaveOnCompileOrRun: false,
-    });
-
-    React.useEffect(() => {
-      let disposed = false;
-      let setting: any | null = null;
-      let onSettingChanged: (() => void) | null = null;
-
-      settingRegistry
-        .load(KALE_SETTINGS_PLUGIN_ID)
-        .then(loadedSetting => {
-          setting = loadedSetting;
-
-          const read = () => ({
-            enableKaleByDefault:
-              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
-                | boolean
-                | undefined) ?? false,
-            autoSaveOnCompileOrRun:
-              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
-                | boolean
-                | undefined) ?? false,
-          });
-
-          const update = () => {
-            if (disposed) {
-              return;
-            }
-            setKaleSettings(read());
-          };
-
-          update();
-          onSettingChanged = () => update();
-          (loadedSetting.changed as any).connect(onSettingChanged);
-        })
-        .catch(reason => {
-          console.error('Failed to load Kale settings:', reason);
-        });
-
-      return () => {
-        disposed = true;
-        if (setting && onSettingChanged) {
-          (setting.changed as any).disconnect(onSettingChanged);
-        }
-      };
-    }, []);
-
-    return (
-      <KubeflowKaleLeftPanel
-        ref={ref => setLeftPanelRef(ref)}
-        lab={lab}
-        tracker={tracker}
-        docManager={docManager}
-        backend={backend}
-        kernel={kernel}
-        enableKaleByDefault={kaleSettings.enableKaleByDefault}
-        autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
-      />
-    );
-  };
 
   async function loadPanel() {
     let reveal_widget = undefined;
@@ -242,6 +173,8 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
+        enableKaleByDefault={false}
+        autoSaveOnCompileOrRun={false}
         defaultBaseImage={defaultBaseImage}
       />
     );
