@@ -75,8 +75,6 @@ export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
   functions: 'a32626',
 };
 
-export const DEFAULT_BASE_IMAGE = 'python:3.12';
-
 const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric
  characters or '_', and can not start with a digit.`;
 
@@ -667,9 +665,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
           <DialogContent>
             <p style={{ margin: '8px 0' }}>
               System Default:{' '}
-              <strong>
-                {this.props.defaultBaseImage || DEFAULT_BASE_IMAGE}
-              </strong>
+              <strong>{this.props.defaultBaseImage || 'Not configured'}</strong>
             </p>
 
             <p style={{ margin: '8px 0' }}>

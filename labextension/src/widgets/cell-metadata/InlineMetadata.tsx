@@ -18,7 +18,6 @@ import ColorUtils from '../../lib/ColorUtils';
 import {
   RESERVED_CELL_NAMES,
   RESERVED_CELL_NAMES_HELP_TEXT,
-  DEFAULT_BASE_IMAGE,
 } from './CellMetadataEditor';
 import EditIcon from '@mui/icons-material/Edit';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
@@ -236,7 +235,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
       this.props.baseImage ||
       this.props.pipelineBaseImage ||
       this.props.defaultBaseImage ||
-      DEFAULT_BASE_IMAGE;
+      'Not configured';
     const isDefault = !this.props.baseImage;
 
     return (

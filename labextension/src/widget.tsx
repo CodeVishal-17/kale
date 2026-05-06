@@ -110,10 +110,21 @@ async function activate(
 
   let defaultBaseImage =
     (settings.get('default_base_image').composite as string) || 'python:3.12';
+  let enableKaleByDefault =
+    (settings.get('enable_kale_by_default').composite as boolean) || false;
+
+  let autoSaveOnCompileOrRun =
+    (settings.get('autosave_on_compile').composite as boolean) || false;
 
   settings.changed.connect(() => {
     defaultBaseImage =
       (settings.get('default_base_image').composite as string) || '';
+
+    enableKaleByDefault =
+      (settings.get('enable_kale_by_default').composite as boolean) || false;
+
+    autoSaveOnCompileOrRun =
+      (settings.get('autosave_on_compile').composite as boolean) || false;
 
     if (kalePanelWidget) {
       const newWidget = createPanel(defaultBaseImage);
@@ -172,8 +183,8 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
-        enableKaleByDefault={false}
-        autoSaveOnCompileOrRun={false}
+        enableKaleByDefault={enableKaleByDefault}
+        autoSaveOnCompileOrRun={autoSaveOnCompileOrRun}
         defaultBaseImage={defaultBaseImage}
       />,
     );
