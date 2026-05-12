@@ -38,6 +38,7 @@ export interface IKaleNotebookMetadata {
 
   steps_defaults?: string[];
   storage_class_name?: string;
+  output_path?: string;
 }
 
 export const DefaultState = {

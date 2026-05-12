@@ -23,7 +23,8 @@ import { DeploysProgress } from './deploys-progress/DeploysProgress';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@mui/material/styles';
-import { FormControlLabel, Switch } from '@mui/material';
+import { FormControlLabel, Link, Switch } from '@mui/material';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { theme } from '../Theme';
 import { Input } from '../components/Input';
 import { KaleEmptyState } from './KaleEmptyState';
@@ -53,16 +54,19 @@ interface IProps {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
+  outputPath: string;
 }
 
 export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
   const {
+    lab,
     tracker,
     backend,
     kernel,
     docManager,
     enableKaleByDefault,
     autoSaveOnCompileOrRun,
+    outputPath,
   } = props;
 
   const kfpStatus = useKfpStatus(kernel, backend);
@@ -79,7 +83,13 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     kernel,
     docManager,
     autoSaveOnCompileOrRun,
+    outputPath,
   });
+
+  const openKaleSettings = () => {
+    // Settings Editor filter matches schema title, not plugin id.
+    lab.commands.execute('settingeditor:open', { query: 'Kale' });
+  };
 
   // Keep deployment refs in sync with current metadata/namespace
   deployment.syncRefs(notebookMeta.metadata, notebookMeta.namespace, false);
@@ -259,6 +269,25 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
               {pipeline_name_input}
               {pipeline_desc_input}
               {enable_caching_toggle}
+            </div>
+
+            <div className="kale-settings-notice">
+              <SettingsOutlinedIcon
+                className="kale-settings-notice-icon"
+                fontSize="small"
+              />
+              <span>
+                Advanced Kale settings live in JupyterLab Settings.{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  underline="hover"
+                  onClick={openKaleSettings}
+                  sx={{ color: theme.kale.headers.main }}
+                >
+                  Open settings
+                </Link>
+              </span>
             </div>
           </div>
 
