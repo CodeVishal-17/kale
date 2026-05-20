@@ -28,6 +28,12 @@ import ColorUtils from '../../../lib/ColorUtils';
 import { Input } from '../../../components/Input';
 import { Select } from '../../../components/Select';
 
+const disabledFieldSx = {
+  '& .MuiInputBase-input.Mui-disabled': {
+    WebkitTextFillColor: 'rgba(255,255,255,0.38)',
+  },
+};
+
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },
   { value: 'amd.com/gpu', label: 'AMD' },
@@ -167,14 +173,7 @@ export const GpuDialog: React.FC<IGpuDialogProps> = props => {
                 disabled={gpuType === undefined}
                 variant="outlined"
                 label="GPU Count"
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    WebkitTextFillColor: 'rgba(255,255,255,0.5)',
-                  },
-                  '& .MuiOutlinedInput-root.Mui-disabled': {
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                  },
-                }}
+                sx={disabledFieldSx}
                 value={gpuCount || 1}
                 updateValue={(v: string) => {
                   if (gpuType) {
@@ -187,14 +186,7 @@ export const GpuDialog: React.FC<IGpuDialogProps> = props => {
             <Grid size={{ xs: 6 }}>
               <Select
                 disabled={gpuType === undefined}
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    WebkitTextFillColor: 'rgba(255,255,255,0.5)',
-                  },
-                  '& .MuiOutlinedInput-root.Mui-disabled': {
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                  },
-                }}
+                sx={disabledFieldSx}
                 updateValue={(v: string) => {
                   const actions = [];
                   if (gpuType) {
