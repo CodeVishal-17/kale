@@ -169,6 +169,14 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
                 disabled={gpuType === undefined}
                 variant="outlined"
                 label="GPU Count"
+                sx={{
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    WebkitTextFillColor: 'rgba(255,255,255,0.5)',
+                  },
+                  '& .MuiOutlinedInput-root.Mui-disabled': {
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                  },
+                }}
                 value={gpuCount || 1}
                 updateValue={(v: string) => {
                   if (gpuType) {
@@ -181,6 +189,14 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
             <Grid size={{ xs: 6 }}>
               <Select
                 disabled={gpuType === undefined}
+                sx={{
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    WebkitTextFillColor: 'rgba(255,255,255,0.5)',
+                  },
+                  '& .MuiOutlinedInput-root.Mui-disabled': {
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                  },
+                }}
                 updateValue={(v: string) => {
                   const actions = [];
                   if (gpuType) {
