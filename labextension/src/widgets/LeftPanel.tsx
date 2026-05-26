@@ -39,6 +39,7 @@ import {
   DeployType,
   IExperiment,
   IKaleNotebookMetadata,
+  ISecurityContext,
   DefaultState,
   NEW_EXPERIMENT,
   PIPELINE_NAME_MAX_LENGTH,
@@ -54,6 +55,7 @@ interface IProps {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
+  securityContext: ISecurityContext;
   outputPath: string;
 }
 
@@ -66,6 +68,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     docManager,
     enableKaleByDefault,
     autoSaveOnCompileOrRun,
+    securityContext,
     outputPath,
   } = props;
 
@@ -92,7 +95,16 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
   };
 
   // Keep deployment refs in sync with current metadata/namespace
-  deployment.syncRefs(notebookMeta.metadata, notebookMeta.namespace, false);
+  // Use JupyterLab settings security_context as default if notebook doesn't have one
+  const metadataWithSecurityContext = {
+    ...notebookMeta.metadata,
+    security_context: notebookMeta.metadata.security_context ?? securityContext,
+  };
+  deployment.syncRefs(
+    metadataWithSecurityContext,
+    notebookMeta.namespace,
+    false,
+  );
 
   // Register toolbar callbacks on mount, clear on unmount
   useEffect(() => {
