@@ -58,6 +58,7 @@ const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
+const DEFAULT_BASE_IMAGE_KEY = 'defaultBaseImage';
 const SECURITY_CONTEXT_KEY = 'securityContext';
 
 interface ISecurityContextSettings {
@@ -133,9 +134,28 @@ async function activate(
     const [kaleSettings, setKaleSettings] = React.useState({
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
+      defaultBaseImage: '',
       securityContext: {} as ISecurityContextSettings,
       outputPath: '',
     });
+    const [envOnlyBaseImage, setEnvOnlyBaseImage] = React.useState('');
+
+    React.useEffect(() => {
+      if (!backend) {
+        return;
+      }
+
+      executeRpc(kernel, 'nb.get_default_base_image_env')
+        .then((envOnly: string) => {
+          setEnvOnlyBaseImage(envOnly?.trim() ?? '');
+        })
+        .catch(error => {
+          console.warn(
+            'Failed to fetch default base image from backend:',
+            error,
+          );
+        });
+    }, [backend, kernel]);
 
     // Fetch backend defaults for security context from env vars
     const [backendSecurityContext, setBackendSecurityContext] =
@@ -165,6 +185,21 @@ async function activate(
         .then(async loadedSetting => {
           setting = loadedSetting;
 
+          const jlDefaultBaseImageSetting = loadedSetting.get(
+            DEFAULT_BASE_IMAGE_KEY,
+          );
+          if (
+            envOnlyBaseImage &&
+            jlDefaultBaseImageSetting.user === undefined
+          ) {
+            const currentComposite = jlDefaultBaseImageSetting.composite as
+              | string
+              | undefined;
+            if (!currentComposite?.trim()) {
+              await loadedSetting.set(DEFAULT_BASE_IMAGE_KEY, envOnlyBaseImage);
+            }
+          }
+
           // If backend env vars are available and user hasn't modified the setting,
           // programmatically set them so they appear in the Settings UI
           const jlSecurityContextSetting =
@@ -187,25 +222,28 @@ async function activate(
             );
           }
 
-          const read = () => {
-            return {
-              enableKaleByDefault:
-                (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
-                  | boolean
-                  | undefined) ?? false,
-              autoSaveOnCompileOrRun:
-                (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY)
-                  .composite as boolean | undefined) ?? false,
-              securityContext:
-                (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
-                  | ISecurityContextSettings
-                  | undefined) ?? {},
-              outputPath:
-                (loadedSetting.get(OUTPUT_PATH_KEY).composite as
-                  | string
-                  | undefined) ?? '',
-            };
-          };
+          const read = () => ({
+            enableKaleByDefault:
+              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            autoSaveOnCompileOrRun:
+              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            defaultBaseImage:
+              (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
+                | string
+                | undefined) ?? '',
+            securityContext:
+              (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
+                | ISecurityContextSettings
+                | undefined) ?? {},
+            outputPath:
+              (loadedSetting.get(OUTPUT_PATH_KEY).composite as
+                | string
+                | undefined) ?? '',
+          });
 
           const update = () => {
             if (disposed) {
@@ -228,7 +266,7 @@ async function activate(
           (setting.changed as any).disconnect(onSettingChanged);
         }
       };
-    }, [backendSecurityContext]);
+    }, [envOnlyBaseImage, backendSecurityContext]);
 
     return (
       <KubeflowKaleLeftPanel
@@ -239,6 +277,8 @@ async function activate(
         kernel={kernel}
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
+        defaultBaseImageSetting={kaleSettings.defaultBaseImage}
+        envDefaultBaseImage={envOnlyBaseImage}
         securityContext={kaleSettings.securityContext}
         outputPath={kaleSettings.outputPath}
       />

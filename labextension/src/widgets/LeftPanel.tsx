@@ -34,6 +34,7 @@ import { useKfpStatus } from './hooks/useKfpStatus';
 import { useNotebookMetadata } from './hooks/useNotebookMetadata';
 import { useDeployment } from './hooks/useDeployment';
 import { setLeftPanelCallbacks } from '../commands/kaleToolbar';
+import { resolveDefaultBaseImage } from '../lib/resolveDefaultBaseImage';
 
 import {
   DeployType,
@@ -55,6 +56,8 @@ interface IProps {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
+  defaultBaseImageSetting: string;
+  envDefaultBaseImage: string;
   securityContext: ISecurityContext;
   outputPath: string;
 }
@@ -68,9 +71,16 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     docManager,
     enableKaleByDefault,
     autoSaveOnCompileOrRun,
+    defaultBaseImageSetting,
+    envDefaultBaseImage,
     securityContext,
     outputPath,
   } = props;
+
+  const resolvedDefaultBaseImage = resolveDefaultBaseImage(
+    defaultBaseImageSetting,
+    envDefaultBaseImage,
+  );
 
   const kfpStatus = useKfpStatus(kernel, backend);
 
@@ -87,6 +97,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     docManager,
     autoSaveOnCompileOrRun,
     outputPath,
+    resolvedDefaultBaseImage,
   });
 
   const openKaleSettings = () => {
@@ -234,8 +245,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
               <InlineCellsMetadata
                 onMetadataEnable={notebookMeta.setIsEnabled}
                 notebook={activeNotebook}
-                pipelineBaseImage={notebookMeta.metadata.base_image}
-                defaultBaseImage={notebookMeta.defaultBaseImage}
+                resolvedDefaultBaseImage={resolvedDefaultBaseImage}
                 initialChecked={notebookMeta.isEnabled}
               />
             ) : (

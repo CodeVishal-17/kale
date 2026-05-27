@@ -64,11 +64,11 @@ def resume_notebook_path(request, server_root=None):
         return p
 
 
-def get_default_base_image(request):
-    """Get the default base image used when no other image is specified."""
-    from kale.pipeline import DEFAULT_BASE_IMAGE
+def get_default_base_image_env(request):
+    """Get ``KALE_DEFAULT_BASE_IMAGE`` when set, or an empty string."""
+    from kale.common.utils import get_default_base_image_from_env
 
-    return DEFAULT_BASE_IMAGE
+    return get_default_base_image_from_env() or ""
 
 
 # fixme: Remove the debug argument from the labextension RPC call.

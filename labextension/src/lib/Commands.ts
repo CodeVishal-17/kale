@@ -24,7 +24,6 @@ import { DeployProgressState, RunPipeline } from '../widgets/deploys-progress/De
 type OnUpdateCallbak = (params: Partial<DeployProgressState>) => void;
 
 import {
-  DefaultState,
   IExperiment,
   IKaleNotebookMetadata,
   NEW_EXPERIMENT,
@@ -199,39 +198,6 @@ export default class Commands {
     return validateNotebook;
   };
 
-  /**
-   * Analyse the current metadata and produce some warning to be shown
-   * under the compilation task
-   * @param metadata Notebook metadata
-   */
-  getCompileWarnings = (metadata: IKaleNotebookMetadata) => {
-    const warningContent = [];
-
-    // in case the notebook's docker base image is different than the default
-    // one (e.g. the one detected in the Notebook Server), alert the user
-    if (
-      DefaultState.metadata.base_image !== '' &&
-      metadata.base_image !== DefaultState.metadata.base_image
-    ) {
-      warningContent.push(
-        'The image you used to create the notebook server is different ' +
-        'from the image you have selected for your pipeline.',
-        '',
-        'Your Kubeflow pipeline will use the following image: <pre><b>' +
-        metadata.base_image +
-        '</b></pre>',
-        'You created the notebook server using the following image: <pre><b>' +
-        DefaultState.metadata.base_image +
-        '</b></pre>',
-        '',
-        "To use this notebook server's image as base image" +
-        ' for the pipeline steps, delete the existing docker image' +
-        ' from the Advanced Settings section.',
-      );
-    }
-    return warningContent;
-  };
-
   // todo: docManager needs to be passed to deploysProgress during init
   // todo: autosnapshot will become part of metadata
   // todo: deployDebugMessage will be removed (the "Debug" toggle is of no use
@@ -243,12 +209,7 @@ export default class Commands {
     deployDebugMessage: boolean,
     onUpdate: OnUpdateCallbak,
   ): Promise<ICompileNotebookResult> => {
-    // after parsing and validating the metadata, show warnings (if necessary)
-    const compileWarnings = this.getCompileWarnings(metadata);
     onUpdate({ showCompileProgress: true, docManager: docManager });
-    if (compileWarnings.length) {
-      onUpdate({ compileWarnings });
-    }
     const compileNotebookArgs: ICompileNotebookArgs = {
       source_notebook_path: notebookPath,
       notebook_metadata_overrides: metadata,

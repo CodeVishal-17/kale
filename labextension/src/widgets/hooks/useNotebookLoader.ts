@@ -77,7 +77,6 @@ export function useNotebookLoader({
 }: IUseNotebookLoaderParams) {
   const {
     setKfpUiHost,
-    setDefaultBaseImage,
     setNamespace,
     setGettingExperiments,
     metadataRef,
@@ -98,9 +97,7 @@ export function useNotebookLoader({
       await notebook.sessionContext.ready;
 
       const host = (await commands.getKfpUiHost()) || DEFAULT_UI_URL;
-      const defImage = await commands.getDefaultBaseImage();
       setKfpUiHost(host);
-      setDefaultBaseImage(defImage);
 
       const notebookMetadata = NotebookUtils.getMetaData(notebook, metadataKey);
 
@@ -196,8 +193,7 @@ export function useNotebookLoader({
               ? notebookMetadata['pipeline_name']
               : sanitized,
           pipeline_description: notebookMetadata['pipeline_description'] || '',
-          base_image:
-            notebookMetadata['base_image'] || DefaultState.metadata.base_image,
+          base_image: '',
           steps_defaults: DefaultState.metadata.steps_defaults,
         });
       } else {
@@ -218,7 +214,6 @@ export function useNotebookLoader({
       kernel,
       metadataKey,
       setKfpUiHost,
-      setDefaultBaseImage,
       setNamespace,
       setGettingExperiments,
       metadataRef,
