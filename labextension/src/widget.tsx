@@ -185,7 +185,6 @@ async function activate(
         kernel={kernel}
         enableKaleByDefault={enableKaleByDefault}
         autoSaveOnCompileOrRun={autoSaveOnCompileOrRun}
-        defaultBaseImage={defaultBaseImage}
       />,
     );
   }

@@ -42,6 +42,7 @@ const KFP_STATUS_REFRESH_MS = 30_000;
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const DEFAULT_UI_URL = 'http://localhost:8080';
+const PIPELINE_NAME_MAX_LENGTH = 124;
 
 export interface IExperiment {
   id: string;
@@ -61,7 +62,6 @@ interface IProps {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
-  defaultBaseImage?: string;
 }
 
 interface IState {
@@ -355,14 +355,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         if (nbFilePath) {
           await commands.resumeStateIfExploreNotebook(nbFilePath);
         }
-        // Detect the base image of the current Notebook Server
-        const baseImage = await commands.getBaseImage();
-        if (baseImage) {
-          DefaultState.metadata.base_image = baseImage;
-        } else {
-          DefaultState.metadata.base_image = '';
-        }
-
         // Get experiment information last because it may take more time to respond
         this.setState({ gettingExperiments: true });
         const { experiments, experiment, experiment_name } =
@@ -655,9 +647,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         experimentInputValue = selectedExperiments[0].name;
       }
     }
-    const pipelineNameValid = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(
-      this.state.metadata.pipeline_name,
-    );
+    const pipelineNameValid =
+      /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(
+        this.state.metadata.pipeline_name,
+      ) && this.state.metadata.pipeline_name.length <= PIPELINE_NAME_MAX_LENGTH;
     const experimentNameRegex = /^[a-z]([-a-z0-9]*[a-z0-9])?$/;
     const experimentNameValid =
       experimentInputSelected !== NEW_EXPERIMENT.id ||
@@ -790,16 +783,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 {pipeline_desc_input}
                 {enable_caching_toggle}
               </div>
-              <Input
-                variant="standard"
-                label={'Default Base Image'}
-                value={this.state.defaultBaseImage}
-                placeholder="e.g. python:3.12"
-                updateValue={(v: string) => {
-                  this.setState({ defaultBaseImage: v });
-                  this.updateDockerImage(v);
-                }}
-              />
             </div>
 
             <div

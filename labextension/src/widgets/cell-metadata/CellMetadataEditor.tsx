@@ -668,13 +668,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               <strong>{this.props.defaultBaseImage || 'Not configured'}</strong>
             </p>
 
-            <p style={{ margin: '8px 0' }}>
-              Pipeline Default:{' '}
-              <strong>
-                {this.props.pipelineBaseImage ||
-                  'Not set (uses system default)'}
-              </strong>
-            </p>
             <Input
               variant="outlined"
               label="Custom Base Image"
